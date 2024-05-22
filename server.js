@@ -130,6 +130,9 @@ app.put('/user', async (req, res) => {
 
 		await currentUser.save()
 
+		// Update user session
+		req.session.user = currentUser
+
 		res.status(200).send('اطلاعات کاربر با موفقیت به روز شد')
 	} catch (error) {
 		res.status(500).send('خطا در به روز رسانی اطلاعات کاربر')
@@ -298,20 +301,33 @@ app.post('/addproduct', async (req, res) => {
 
 // Get school products
 app.get('/products', async (req, res) => {
-	const user = req.session.user
-
-	const schoolId = user && user.schoolId
-	const school = await School.findOne({ schoolId: schoolId })
-	const products = school && school.products
-
-	if (!user) {
+	if (!req.session.user) {
 		return res
 			.status(406)
 			.json({ message: 'شما به حساب کاربری خود وارد نشده اید' })
 	}
 
-	if (products) {
-		return res.status(200).json(products)
+	const user = req.session.user
+	const schoolId = user.schoolId
+
+	if (!schoolId) {
+		return res.status(400).json({ message: 'شما هنوز به مدرسه‌ای متصل نیستید' })
+	}
+
+	try {
+		const school = await School.findOne({ schoolId: schoolId })
+
+		if (!school) {
+			return res.status(404).json({ message: 'مدرسه یافت نشد' })
+		}
+
+		if (!school.products) {
+			return res.status(404).json({ message: 'محصولی وجود ندارد' })
+		}
+
+		return res.status(200).json(school.products)
+	} catch (error) {
+		return res.status(500).json({ message: 'خطا در بازیابی محصولات' })
 	}
 })
 
