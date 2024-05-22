@@ -234,6 +234,12 @@ app.post('/addproduct', async (req, res) => {
 		// Find the user's school and update the products array
 		const user = req.session.user
 
+		if (!user.is_admin) {
+			return res
+				.json({ message: 'شما دسترسی لازم برای اضافه کردن محصول را ندارید' }, 409)
+				.end()
+		}
+
 		if (user.schoolId) {
 			const schoolId = user.schoolId
 			const school = await School.findOne({ schoolId: schoolId })
