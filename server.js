@@ -331,6 +331,36 @@ app.get('/products', async (req, res) => {
 	}
 })
 
+// Get product with product name
+app.get('/product/:name', async (req, res) => {
+	const user = req.session.user
+
+	if (!user) {
+		return res
+			.status(401)
+			.json({ message: 'شما به حساب کاربری خود وارد نشده اید' })
+	}
+
+	const schoolId = user.schoolId
+	const school = await School.findOne({ schoolId: schoolId })
+
+	if (!school) {
+		return res.status(404).json({ message: 'مدرسه یافت نشد' })
+	}
+
+	const productName = req.params.name
+	const product = school.products.find(
+		(product) => product.name === productName
+	)
+
+	if (!product) {
+		return res.status(404).json({ message: 'محصولی با این نام یافت نشد' })
+	}
+
+	return res.status(200).json(product)
+})
+
+// Get schools list
 app.get('/schools', async (req, res) => {
 	try {
 		const schools = await School.find()
