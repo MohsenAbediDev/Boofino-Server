@@ -299,6 +299,77 @@ app.post('/addproduct', async (req, res) => {
 	}
 })
 
+// Edit product
+app.put('/editproduct/:name', async (req, res) => {
+	const user = req.session.user
+
+	if (!user) {
+		return res
+			.status(401)
+			.json({ message: 'شما به حساب کاربری خود وارد نشده اید' })
+	}
+	if (!user.is_admin) {
+		return res
+			.status(409)
+			.json({ message: 'شما دسترسی لازم برای ویرایش محصول را ندارید' })
+	}
+
+	const schoolId = user.schoolId
+	const school = await School.findOne({ schoolId: schoolId })
+
+	if (!school) {
+		return res.status(404).json({ message: 'مدرسه یافت نشد' })
+	}
+
+	const productName = req.params.name
+	const product = school.products.find(
+		(product) => product.name === productName
+	)
+
+	if (!product) {
+		return res.status(404).json({ message: 'محصولی با این نام یافت نشد' })
+	}
+
+	const {
+		name,
+		imgUrl,
+		price,
+		off,
+		group,
+		finalPrice,
+		sellCount,
+		itemCount,
+		dateTime,
+		freeTime,
+		oldPrice,
+		isDiscount,
+	} = req.body
+
+	if (name) product.name = name
+	if (imgUrl) product.imgUrl = imgUrl
+	if (price !== undefined) product.price = price
+	if (off !== undefined) product.off = off
+	if (group) product.group = group
+	if (finalPrice !== undefined) product.finalPrice = finalPrice
+	if (sellCount !== undefined) product.sellCount = sellCount
+	if (itemCount !== undefined) product.itemCount = itemCount
+	if (dateTime) product.dateTime = dateTime
+	if (freeTime) product.freeTime = freeTime
+	if (oldPrice !== undefined) product.oldPrice = oldPrice
+	if (isDiscount !== undefined) product.isDiscount = isDiscount
+
+	try {
+		await school.save()
+		return res
+			.status(200)
+			.json({ message: 'محصول با موفقیت به‌روزرسانی شد', product })
+	} catch (error) {
+		return res
+			.status(500)
+			.json({ message: 'خطا در به‌روزرسانی محصول', error: error.message })
+	}
+})
+
 // Get school products
 app.get('/products', async (req, res) => {
 	if (!req.session.user) {
