@@ -90,12 +90,14 @@ app.get('/user', async (req, res) => {
 			.status(406)
 			.json({ message: 'شما به حساب کاربری خود وارد نشده اید' })
 	}
-	let getuser = await User.find({ username: req.session.user.username })
-	if (getuser.length == 0) {
+
+	let getUsername = await User.find({ username: req.session.user.username })
+
+	if (getUsername.length == 0) {
 		req.session.user = null
 		return res.status(404).json({ message: '404' })
 	}
-	return res.status(200).json(getuser)
+	return res.status(200).json(getUsername)
 })
 
 app.put('/user', async (req, res) => {
@@ -236,7 +238,10 @@ app.post('/addproduct', async (req, res) => {
 
 		if (!user.is_admin) {
 			return res
-				.json({ message: 'شما دسترسی لازم برای اضافه کردن محصول را ندارید' }, 409)
+				.json(
+					{ message: 'شما دسترسی لازم برای اضافه کردن محصول را ندارید' },
+					409
+				)
 				.end()
 		}
 
@@ -288,6 +293,25 @@ app.post('/addproduct', async (req, res) => {
 		return res
 			.status(500)
 			.json({ message: 'خطا در افزودن محصول', error: error.message })
+	}
+})
+
+// Get school products
+app.get('/products', async (req, res) => {
+	const user = req.session.user
+
+	const schoolId = user && user.schoolId
+	const school = await School.findOne({ schoolId: schoolId })
+	const products = school && school.products
+
+	if (!user) {
+		return res
+			.status(406)
+			.json({ message: 'شما به حساب کاربری خود وارد نشده اید' })
+	}
+
+	if (products) {
+		return res.status(200).json(products)
 	}
 })
 
