@@ -370,6 +370,50 @@ app.put('/editproduct/:name', async (req, res) => {
 	}
 })
 
+// Delete product
+app.delete('/deleteproduct/:name', async (req, res) => {
+	const user = req.session.user
+
+	if (!user) {
+		return res
+			.status(401)
+			.json({ message: 'شما به حساب کاربری خود وارد نشده اید' })
+	}
+	if (!user.is_admin) {
+		return res
+			.status(409)
+			.json({ message: 'شما دسترسی لازم برای ویرایش محصول را ندارید' })
+	}
+
+	const schoolId = user.schoolId
+	const school = await School.findOne({ schoolId: schoolId })
+
+	if (!school) {
+		return res.status(404).json({ message: 'مدرسه یافت نشد' })
+	}
+
+	const productName = req.params.name
+	const productIndex = school.products.findIndex(
+		(product) => product.name === productName
+	)
+
+	if (productIndex === -1) {
+		return res.status(404).json({ message: 'محصولی با این نام یافت نشد' })
+	}
+
+	try {
+		const removedProduct = school.products.splice(productIndex, 1)
+		await school.save()
+		return res
+			.status(200)
+			.json({ message: 'محصول با موفقیت حذف شد' })
+	} catch (error) {
+		return res
+			.status(500)
+			.json({ message: 'خطا در حذف محصول' })
+	}
+})
+
 // Get school products
 app.get('/products', async (req, res) => {
 	if (!req.session.user) {
