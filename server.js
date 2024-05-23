@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit')
 const bodyparser = require('body-parser')
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
+const jalaali = require('jalaali-js')
 const ai = require('./ai')
 const upload = require('./upload')
 const host = 'http://localhost:3000'
@@ -229,11 +230,18 @@ app.post('/addproduct', async (req, res) => {
 		finalPrice,
 		sellCount,
 		itemCount,
-		dateTime,
 		freeTime,
 		oldPrice,
 		isDiscount,
 	} = req.body
+
+	const currentDate = new Date()
+	const jalaaliDate = jalaali.toJalaali(currentDate)
+
+	// Formating time
+	const dateTime = `${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd}`
+
+	console.log(dateTime)
 
 	try {
 		// Find the user's school and update the products array
@@ -404,13 +412,9 @@ app.delete('/deleteproduct/:name', async (req, res) => {
 	try {
 		const removedProduct = school.products.splice(productIndex, 1)
 		await school.save()
-		return res
-			.status(200)
-			.json({ message: 'محصول با موفقیت حذف شد' })
+		return res.status(200).json({ message: 'محصول با موفقیت حذف شد' })
 	} catch (error) {
-		return res
-			.status(500)
-			.json({ message: 'خطا در حذف محصول' })
+		return res.status(500).json({ message: 'خطا در حذف محصول' })
 	}
 })
 
