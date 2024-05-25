@@ -241,8 +241,6 @@ app.post('/addproduct', async (req, res) => {
 	// Formating time
 	const dateTime = `${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd}`
 
-	console.log(dateTime)
-
 	try {
 		// Find the user's school and update the products array
 		const user = req.session.user
@@ -415,6 +413,64 @@ app.delete('/deleteproduct/:name', async (req, res) => {
 		return res.status(200).json({ message: 'محصول با موفقیت حذف شد' })
 	} catch (error) {
 		return res.status(500).json({ message: 'خطا در حذف محصول' })
+	}
+})
+
+// Delete products with product list name
+app.delete('/deleteproducts', async (req, res) => {
+	const user = req.session.user
+
+	if (!user) {
+		return res
+			.status(401)
+			.json({ message: 'شما به حساب کاربری خود وارد نشده اید' })
+	}
+	if (!user.is_admin) {
+		return res
+			.status(409)
+			.json({ message: 'شما دسترسی لازم برای ویرایش محصول را ندارید' })
+	}
+
+	const schoolId = user.schoolId
+	const school = await School.findOne({ schoolId: schoolId })
+
+	if (!school) {
+		return res.status(404).json({ message: 'مدرسه یافت نشد' })
+	}
+
+	const productNames = req.body.productNames
+
+	if (!Array.isArray(productNames)) {
+		return res.status(400).json({ message: 'لیست نام محصولات معتبر نمی‌باشد' })
+	}
+
+	try {
+		let removedProducts = []
+
+		productNames.forEach((productName) => {
+			const productIndex = school.products.findIndex(
+				(product) => product.name === productName
+			)
+
+			if (productIndex !== -1) {
+				const removedProduct = school.products.splice(productIndex, 1)
+				removedProducts.push(removedProduct[0])
+			}
+		})
+
+		await school.save()
+
+		if (removedProducts.length === 0) {
+			return res
+				.status(404)
+				.json({ message: 'هیچ محصولی با این نام‌ها یافت نشد' })
+		}
+
+		return res
+			.status(200)
+			.json({ message: 'محصولات با موفقیت حذف شدند' })
+	} catch (error) {
+		return res.status(500).json({ message: 'خطا در حذف محصولات' })
 	}
 })
 
