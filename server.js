@@ -239,7 +239,7 @@ app.post('/addproduct', async (req, res) => {
 	const jalaaliDate = jalaali.toJalaali(currentDate)
 
 	// Formating time
-	const dateTime = `${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd}`
+	const dateTime = `${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd + 1}`
 
 	try {
 		// Find the user's school and update the products array
@@ -466,9 +466,7 @@ app.delete('/deleteproducts', async (req, res) => {
 				.json({ message: 'هیچ محصولی با این نام‌ها یافت نشد' })
 		}
 
-		return res
-			.status(200)
-			.json({ message: 'محصولات با موفقیت حذف شدند' })
+		return res.status(200).json({ message: 'محصولات با موفقیت حذف شدند' })
 	} catch (error) {
 		return res.status(500).json({ message: 'خطا در حذف محصولات' })
 	}
