@@ -533,6 +533,62 @@ app.get('/product/:name', async (req, res) => {
 	return res.status(200).json(product)
 })
 
+// Search products
+app.get('/search-products/:name', async (req, res) => {
+	const user = req.session.user
+
+	if (!user) {
+		return res
+			.status(401)
+			.json({ message: 'شما به حساب کاربری خود وارد نشده‌اید' })
+	}
+
+	const productName = req.params.name
+
+	console.log(productName)
+
+	if (!req.params) {
+		return res
+			.status(400)
+			.json({ message: 'لطفاً یک کلمه برای جستجو وارد کنید' })
+	}
+
+	const schoolId = user.schoolId
+
+	if (!schoolId) {
+		return res.status(400).json({ message: 'شما هنوز به مدرسه‌ای متصل نیستید' })
+	}
+
+	try {
+		const school = await School.findOne({ schoolId: schoolId })
+
+		if (!school) {
+			return res.status(404).json({ message: 'مدرسه یافت نشد' })
+		}
+
+		if (!school.products) {
+			return res.status(404).json({ message: 'محصولی وجود ندارد' })
+		}
+
+		const regex = new RegExp(productName, 'i')
+		const filteredProducts = school.products.filter((product) =>
+			regex.test(product.name)
+		)
+
+		if (filteredProducts.length === 0) {
+			return res
+				.status(404)
+				.json({ message: 'محصولی یافت نشد' })
+		}
+
+		return res.status(200).json(filteredProducts)
+	} catch (error) {
+		return res
+			.status(500)
+			.json({ message: 'خطا در بازیابی محصولات', error: error.message })
+	}
+})
+
 // Get schools list
 app.get('/schools', async (req, res) => {
 	try {
