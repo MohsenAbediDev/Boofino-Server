@@ -149,11 +149,11 @@ app.post('/register', async (req, res) => {
 	const { fullname, username, password, confirmpassword, phonenumber, imgUrl } =
 		req.body
 	if (!fullname || !username || !password || !confirmpassword || !phonenumber) {
-		return res.status(400).json({ message: 'لطفا تمام فیلد ها را پر کنید' })
+		return res.status(400).json({ message: 'لطفا تمام اطلاعات را وارد کنید' })
 	}
 
 	if (password !== confirmpassword) {
-		return res.status(406).json({ message: 'پسور ها با یکدیگر تطابق ندارند' })
+		return res.status(406).json({ message: 'رمز ها با یکدیگر تطابق ندارند' })
 	}
 	if (password.length < 8) {
 		return res.status(406).json({
@@ -162,7 +162,7 @@ app.post('/register', async (req, res) => {
 	}
 	let checkUser = await User.find({ username })
 	if (checkUser.length > 0) {
-		return res.status(406).json({ message: 'این نام از قبل وجود دارد' })
+		return res.status(406).json({ message: 'این نام کاربری از قبل وجود دارد' })
 	}
 	const passwordhash = bcrypt.hashSync(password, 10)
 
@@ -545,8 +545,6 @@ app.get('/search-products/:name', async (req, res) => {
 
 	const productName = req.params.name
 
-	console.log(productName)
-
 	if (!req.params) {
 		return res
 			.status(400)
@@ -576,9 +574,7 @@ app.get('/search-products/:name', async (req, res) => {
 		)
 
 		if (filteredProducts.length === 0) {
-			return res
-				.status(404)
-				.json({ message: 'محصولی یافت نشد' })
+			return res.status(404).json({ message: 'محصولی یافت نشد' })
 		}
 
 		return res.status(200).json(filteredProducts)
@@ -602,19 +598,32 @@ app.get('/schools', async (req, res) => {
 	}
 })
 
-app.post('/select-school', async (req, res) => {
-	const { schoolId } = req.body
+// Search schools
+app.post('/search-schools', async (req, res) => {
+	const { city, state, name } = req.body
+
+	if (!city || !state || !name) {
+		return res.status(400).json({ message: 'لطفاً تمام اطلاعات را وارد کنید' })
+	}
+
 	try {
-		const selectedSchool = await School.findById(schoolId)
-		if (!selectedSchool) {
-			return res.status(404).json({ error: 'مدرسه یافت نشد' })
+		const schools = await School.find({
+			city: city,
+			state: state,
+			name: new RegExp(name, 'i'),
+		}).select('-products')
+
+		if (schools.length === 0) {
+			return res.status(404).json({ message: 'مدرسه‌ای یافت نشد' })
 		}
-		return res.json(selectedSchool)
+
+		return res.status(200).json(schools)
 	} catch (error) {
-		return res.status(500).json({ error: 'خطا در اتصال' })
+		return res.status(500).json({ message: 'خطا در جستجوی مدارس' })
 	}
 })
 
+// Post image to database
 app.post('/uploadimg', upload.single('imgUrl'), async (req, res) => {
 	try {
 		return res.json({ message: host + '/static/' + req.file.filename }, 201).end
