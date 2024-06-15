@@ -49,8 +49,17 @@ let schoolSchema = new mongoose.Schema({
 	],
 })
 
+let discountCodeSchema = new mongoose.Schema({
+	code: String,
+	usageLimit: Number,
+	minimumCartPrice: Number,
+	percent: Number,
+	expirationDate: Date,
+})
+
 const User = mongoose.model('User', userSchema)
 const School = mongoose.model('School', schoolSchema)
+const DiscountCode = mongoose.model('DiscountCode', discountCodeSchema)
 
 app.use('/static', express.static('uploads/'))
 app.use(function (req, res, next) {
@@ -211,6 +220,31 @@ app.post('/login', async (req, res) => {
 app.get('/logout', (req, res) => {
 	req.session.user = null
 	res.status(202).json({ message: 'با موفقیت از حساب کاربری خود خارج شدید' })
+})
+
+// Set discount to product
+app.post('/discount', async (req, res) => {
+	const { code } = req.body
+	const now = new Date()
+
+	if (!code) {
+		return res.status(400).json({ message: 'لطفا کد تخفیف را وارد کنید' })
+	}
+
+	try {
+		const discountCode = await DiscountCode.find({code: code})
+
+		if (discountCode.length === 0) {
+			return res.status(404).json({ message: 'کد تخفیف یافت نشد' })
+		}
+		if (discountCode.expirationDate > now) {
+			return res.status(400).json({ message: 'زمان استفاده از کد تخفیف به پایان رسیده' })
+		}
+
+		return res.status(200).json(discountCode.percent)
+	} catch (error) {
+		return res.status(500).json({ message: 'خطا در دریافت کد تخفیف' })
+	}
 })
 
 // Add new product to school
