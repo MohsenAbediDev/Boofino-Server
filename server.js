@@ -6,7 +6,6 @@ const bodyparser = require('body-parser')
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const jalaali = require('jalaali-js')
-const ai = require('./ai')
 const upload = require('./upload')
 const host = 'http://localhost:3000'
 let app = express()
@@ -122,21 +121,25 @@ app.put('/user', async (req, res) => {
 
 		const currentUser = await User.findById(req.session.user._id)
 
-		if (newUserData.fullname) {
-			currentUser.fullname = newUserData.fullname
-		}
-		if (newUserData.username) {
-			currentUser.username = newUserData.username
-		}
-		if (newUserData.phonenumber) {
-			currentUser.phonenumber = newUserData.phonenumber
-		}
-		if (newUserData.wallet) {
-			currentUser.wallet = newUserData.wallet
-		}
-		if (newUserData.schoolId) {
-			currentUser.schoolId = newUserData.schoolId
-		}
+		// Update user profile picture
+		newUserData.imgUrl ? (currentUser.imgUrl = newUserData.imgUrl) : false
+
+		// Update user full name
+		newUserData.fullname ? (currentUser.fullname = newUserData.fullname) : false
+
+		// Update username
+		newUserData.username ? (currentUser.username = newUserData.username) : false
+
+		// Update user phone number
+		newUserData.phonenumber
+			? (currentUser.phonenumber = newUserData.phonenumber)
+			: false
+
+		// Update user wallet price
+		newUserData.wallet ? (currentUser.wallet = newUserData.wallet) : false
+
+		// Update user school
+		newUserData.schoolId ? (currentUser.schoolId = newUserData.schoolId) : false
 
 		await currentUser.save()
 
@@ -232,13 +235,15 @@ app.post('/discount', async (req, res) => {
 	}
 
 	try {
-		const discountCode = await DiscountCode.find({code: code})
+		const discountCode = await DiscountCode.find({ code: code })
 
 		if (discountCode.length === 0) {
 			return res.status(404).json({ message: 'کد تخفیف یافت نشد' })
 		}
 		if (discountCode.expirationDate > now) {
-			return res.status(400).json({ message: 'زمان استفاده از کد تخفیف به پایان رسیده' })
+			return res
+				.status(400)
+				.json({ message: 'زمان استفاده از کد تخفیف به پایان رسیده' })
 		}
 
 		return res.status(200).json(discountCode.percent)
