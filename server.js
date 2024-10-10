@@ -136,7 +136,11 @@ app.put('/user', async (req, res) => {
 			: false
 
 		// Update user wallet price
-		newUserData.wallet ? (currentUser.wallet = newUserData.wallet) : false
+		newUserData.wallet
+			? (currentUser.wallet = currentUser.wallet
+					? Number(currentUser.wallet) + Number(newUserData.wallet)
+					: Number(newUserData.wallet))
+			: false
 
 		// Update user school
 		newUserData.schoolId ? (currentUser.schoolId = newUserData.schoolId) : false
