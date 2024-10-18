@@ -56,9 +56,28 @@ let discountCodeSchema = new mongoose.Schema({
 	expirationDate: Date,
 })
 
+let orderSchema = new mongoose.Schema({
+	userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to User
+	products: [
+		{
+			id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }, // Reference to Product
+			imgUrl: String,
+			name: String,
+			group: String,
+			price: Number,
+			quantity: Number,
+		},
+	],
+	totalPrice: Number,
+	status: { type: String, default: 'processing' }, // Default status
+	trackingCode: { type: String, unique: true }, // Unique tracking code for the order
+	createdAt: { type: Date, default: Date.now }, // Creation date of the order
+})
+
 const User = mongoose.model('User', userSchema)
 const School = mongoose.model('School', schoolSchema)
 const DiscountCode = mongoose.model('DiscountCode', discountCodeSchema)
+const Order = mongoose.model('Order', orderSchema)
 
 app.use('/static', express.static('uploads/'))
 app.use(function (req, res, next) {
@@ -253,6 +272,129 @@ app.post('/discount', async (req, res) => {
 		return res.status(200).json(discountCode.percent)
 	} catch (error) {
 		return res.status(500).json({ message: 'خطا در دریافت کد تخفیف' })
+	}
+})
+
+// Order registration from the user
+app.post('/buyproducts', async (req, res) => {
+	const { products, totalPrice } = req.body
+
+	// Check if user is logged in
+	if (!req.session.user) {
+		return res
+			.status(401)
+			.json({ message: 'شما به حساب کاربری خود وارد نشده‌اید' })
+	}
+
+	// Validate input
+	if (!products || !Array.isArray(products) || !totalPrice) {
+		return res.status(400).json({ message: 'لطفا تمام اطلاعات را وارد کنید' })
+	}
+
+	try {
+		// Retrieve user from session and database
+		const user = await User.findById(req.session.user._id)
+
+		// Check if user's wallet has enough money
+		if (user.wallet < totalPrice) {
+			return res.status(400).json({ message: 'موجودی کیف پول شما کافی نیست' })
+		}
+
+		// Find user's school
+		const school = await School.findOne({ schoolId: user.schoolId })
+		if (!school) {
+			return res.status(404).json({ message: 'مدرسه یافت نشد' })
+		}
+
+		// Calculate total price from the products and validate stock
+		let calculatedTotalPrice = 0
+
+		for (let i = 0; i < products.length; i++) {
+			const { id, count } = products[i]
+			const product = school.products.find((prod) => prod._id == id)
+			if (!product) {
+				return res
+					.status(404)
+					.json({ message: `محصول با شناسه ${id} یافت نشد.` })
+			}
+
+			if (product.itemCount < count) {
+				return res.status(400).json({
+					message: `موجودی کافی برای محصول ${product.name} وجود ندارد`,
+				})
+			}
+			calculatedTotalPrice += product.finalPrice * count
+			product.itemCount -= count
+		}
+
+		// Validate total price
+		if (totalPrice !== calculatedTotalPrice) {
+			return res.status(400).json({ message: 'عدم تطابق قیمت کل' })
+		}
+
+		// Deduct total price from user's wallet
+		if (user.wallet >= totalPrice) {
+			user.wallet -= totalPrice
+		} else {
+			return res
+				.status(400)
+				.json({
+					message: 'موجودی شما کامل نمی‌باشد! لطفا کیف پول خودرا شارژ نمایید',
+				})
+		}
+
+		await user.save()
+
+		// Save the updated school with new product data
+		await school.save()
+
+		// Create and save the new order
+		const newOrder = new Order({
+			userId: user._id,
+			products: products.map((p) => ({
+				id: p.id,
+				name: school.products.find((prod) => prod._id == p.id).name,
+				price: school.products.find((prod) => prod._id == p.id).finalPrice,
+				quantity: p.count,
+			})),
+			totalPrice: calculatedTotalPrice,
+			trackingCode: `TR-${Date.now()}`,
+		})
+		await newOrder.save()
+
+		return res.status(200).json({
+			message: 'خرید با موفقیت انجام شد',
+			trackingCode: newOrder.trackingCode,
+		})
+	} catch (error) {
+		return res.status(500).json({
+			message: 'خطا در پردازش خرید. لطفا دوباره تلاش کنید',
+			error: error.message,
+		})
+	}
+})
+
+// Get order info
+app.get('/order/:trackingCode', async (req, res) => {
+	const { trackingCode } = req.params
+
+	try {
+		const order = await Order.findOne({ trackingCode })
+
+		if (!order) {
+			return res.status(404).json({ message: 'سفارشی با این کد یافت نشد' })
+		}
+
+		res.status(200).json({
+			products: order.products,
+			totalPrice: order.totalPrice,
+			status: order.status,
+			createdAt: order.createdAt,
+		})
+	} catch (error) {
+		res
+			.status(500)
+			.json({ message: 'خطا در بازیابی سفارش', error: error.message })
 	}
 })
 

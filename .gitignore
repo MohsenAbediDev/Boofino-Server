@@ -1,11 +1,3 @@
 node_modules/
-uploads/*.jpg
-uploads/*.jpeg
-uploads/*.png
-uploads/*.png
-uploads/*.gif
-uploads/*.bmp
-uploads/*.tiff
-uploads/*.webp
-uploads/*.svg
+uploads/
 *.bat
