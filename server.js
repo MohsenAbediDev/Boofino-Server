@@ -358,7 +358,7 @@ app.post('/buyproducts', async (req, res) => {
 				quantity: p.count,
 			})),
 			totalPrice: calculatedTotalPrice,
-			trackingCode: `TR-${Date.now()}`,
+			trackingCode: Math.floor(1000 + Math.random() * 9000),
 		})
 		await newOrder.save()
 
