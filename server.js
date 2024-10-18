@@ -336,11 +336,9 @@ app.post('/buyproducts', async (req, res) => {
 		if (user.wallet >= totalPrice) {
 			user.wallet -= totalPrice
 		} else {
-			return res
-				.status(400)
-				.json({
-					message: 'موجودی شما کامل نمی‌باشد! لطفا کیف پول خودرا شارژ نمایید',
-				})
+			return res.status(400).json({
+				message: 'موجودی شما کافی نمی‌باشد! لطفا کیف پول خودرا شارژ نمایید',
+			})
 		}
 
 		await user.save()
@@ -348,7 +346,12 @@ app.post('/buyproducts', async (req, res) => {
 		// Save the updated school with new product data
 		await school.save()
 
-		// Create and save the new order
+		// Convert the current date to Jalaali (Persian date)
+		const currentDate = new Date()
+		const jalaaliDate = jalaali.toJalaali(currentDate)
+		const createdAtJalaali = `${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd}`
+
+		// Create and save the new order with Jalaali date
 		const newOrder = new Order({
 			userId: user._id,
 			products: products.map((p) => ({
@@ -359,6 +362,7 @@ app.post('/buyproducts', async (req, res) => {
 			})),
 			totalPrice: calculatedTotalPrice,
 			trackingCode: Math.floor(1000 + Math.random() * 9000),
+			createdAt: createdAtJalaali, 
 		})
 		await newOrder.save()
 
