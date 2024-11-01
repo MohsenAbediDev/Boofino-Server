@@ -70,7 +70,7 @@ let orderSchema = new mongoose.Schema({
 	],
 	totalPrice: Number,
 	status: { type: String, default: 'processing' }, // Default status
-	trackingCode: { type: String, unique: true }, // Unique tracking code for the order
+	trackingCode: Number,
 	createdAt: { type: Date, default: Date.now }, // Creation date of the order
 })
 
@@ -286,6 +286,13 @@ app.post('/buyproducts', async (req, res) => {
 			.json({ message: 'شما به حساب کاربری خود وارد نشده‌اید' })
 	}
 
+	const user = req.session.user
+	const schoolId = user.schoolId
+
+	if (!schoolId) {
+		return res.status(400).json({ message: 'شما هنوز به مدرسه‌ای متصل نیستید' })
+	}
+
 	// Validate input
 	if (!products || !Array.isArray(products) || !totalPrice) {
 		return res.status(400).json({ message: 'لطفا تمام اطلاعات را وارد کنید' })
@@ -354,15 +361,19 @@ app.post('/buyproducts', async (req, res) => {
 		// Create and save the new order with Jalaali date
 		const newOrder = new Order({
 			userId: user._id,
-			products: products.map((p) => ({
-				id: p.id,
-				name: school.products.find((prod) => prod._id == p.id).name,
-				price: school.products.find((prod) => prod._id == p.id).finalPrice,
-				quantity: p.count,
-			})),
+			products: products.map((p) => {
+				const product = school.products.find((prod) => prod._id == p.id)
+				return {
+					id: p.id,
+					name: product.name,
+					imgUrl: product.imgUrl,
+					price: product.finalPrice,
+					quantity: p.count,
+				}
+			}),
 			totalPrice: calculatedTotalPrice,
 			trackingCode: Math.floor(1000 + Math.random() * 9000),
-			createdAt: createdAtJalaali, 
+			createdAt: createdAtJalaali,
 		})
 		await newOrder.save()
 
@@ -378,7 +389,38 @@ app.post('/buyproducts', async (req, res) => {
 	}
 })
 
-// Get order info
+// Get all user orders
+app.get('/userorders', async (req, res) => {
+	if (!req.session.user) {
+		return res
+			.status(406)
+			.json({ message: 'شما به حساب کاربری خود وارد نشده اید' })
+	}
+
+	const user = req.session.user
+	const schoolId = user.schoolId
+
+	if (!schoolId) {
+		return res.status(400).json({ message: 'شما هنوز به مدرسه‌ای متصل نیستید' })
+	}
+
+	try {
+		const orders = await Order.find({ userId: req.session.user._id })
+
+		if (!orders.length) {
+			return res.status(404).json({ message: 'هیچ سفارشی یافت نشد' })
+		}
+
+		return res.status(200).json(orders)
+	} catch (error) {
+		return res.status(500).json({
+			message: 'خطا در بازیابی سفارشات. بعدا دوباره تلاش کنید',
+			error: error.message,
+		})
+	}
+})
+
+// Get order buy tracking code
 app.get('/order/:trackingCode', async (req, res) => {
 	const { trackingCode } = req.params
 
