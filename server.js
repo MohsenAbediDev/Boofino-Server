@@ -586,18 +586,18 @@ app.put('/editproduct/:name', async (req, res) => {
 		isDiscount,
 	} = req.body
 
-	if (name) product.name = name
-	if (imgUrl) product.imgUrl = imgUrl
-	if (price !== undefined) product.price = price
-	if (off !== undefined) product.off = off
-	if (group) product.group = group
-	if (finalPrice !== undefined) product.finalPrice = finalPrice
-	if (sellCount !== undefined) product.sellCount = sellCount
-	if (itemCount !== undefined) product.itemCount = itemCount
-	if (dateTime) product.dateTime = dateTime
-	if (freeTime) product.freeTime = freeTime
-	if (oldPrice !== undefined) product.oldPrice = oldPrice
-	if (isDiscount !== undefined) product.isDiscount = isDiscount
+	name ? (product.name = name) : null
+	imgUrl ? (product.imgUrl = imgUrl) : null
+	price ? (product.price = price) : null
+	off ? (product.off = off) : null
+	group ? (product.group = group) : null
+	finalPrice ? (product.finalPrice = finalPrice) : null
+	sellCount ? (product.sellCount = sellCount) : null
+	itemCount ? (product.itemCount = itemCount) : null
+	dateTime ? (product.dateTime = dateTime) : null
+	freeTime ? (product.freeTime = freeTime) : null
+	oldPrice ? (product.oldPrice = oldPrice) : null
+	isDiscount ? (product.isDiscount = isDiscount) : null
 
 	try {
 		await school.save()
