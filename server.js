@@ -356,7 +356,11 @@ app.post('/buyproducts', async (req, res) => {
 		// Convert the current date to Jalaali (Persian date)
 		const currentDate = new Date()
 		const jalaaliDate = jalaali.toJalaali(currentDate)
-		const createdAtJalaali = `${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd}`
+		const createdAtJalaali =
+			`${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd} ` +
+			`${currentDate.getHours().toString()}:` +
+			`${currentDate.getMinutes().toString()}:` +
+			`${currentDate.getSeconds().toString()}`
 
 		// Create and save the new order with Jalaali date
 		const newOrder = new Order({
