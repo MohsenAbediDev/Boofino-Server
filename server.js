@@ -141,28 +141,32 @@ app.put('/user', async (req, res) => {
 		const currentUser = await User.findById(req.session.user._id)
 
 		// Update user profile picture
-		newUserData.imgUrl ? (currentUser.imgUrl = newUserData.imgUrl) : false
+		newUserData.imgUrl ? (currentUser.imgUrl = newUserData.imgUrl) : null
 
 		// Update user full name
-		newUserData.fullname ? (currentUser.fullname = newUserData.fullname) : false
+		newUserData.fullname ? (currentUser.fullname = newUserData.fullname) : null
 
 		// Update username
-		newUserData.username ? (currentUser.username = newUserData.username) : false
+		newUserData.username ? (currentUser.username = newUserData.username) : null
+
+		newUserData.password
+			? (currentUser.passwordHash = bcrypt.hashSync(newUserData.password, 10))
+			: null
 
 		// Update user phone number
 		newUserData.phonenumber
 			? (currentUser.phonenumber = newUserData.phonenumber)
-			: false
+			: null
 
 		// Update user wallet price
 		newUserData.wallet
 			? (currentUser.wallet = currentUser.wallet
 					? Number(currentUser.wallet) + Number(newUserData.wallet)
 					: Number(newUserData.wallet))
-			: false
+			: null
 
 		// Update user school
-		newUserData.schoolId ? (currentUser.schoolId = newUserData.schoolId) : false
+		newUserData.schoolId ? (currentUser.schoolId = newUserData.schoolId) : null
 
 		await currentUser.save()
 
