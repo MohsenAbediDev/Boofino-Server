@@ -81,6 +81,7 @@ const DiscountCode = mongoose.model('DiscountCode', discountCodeSchema)
 const Order = mongoose.model('Order', orderSchema)
 
 app.use('/static', express.static('uploads/'))
+app.use('/contents', express.static('contents/'))
 app.use(function (req, res, next) {
 	// Website you wish to allow to connect
 	res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
