@@ -358,16 +358,18 @@ app.post('/buyproducts', async (req, res) => {
 		// Save the updated school with new product data
 		await school.save()
 
-		// Convert the current date to Jalaali (Persian date)
+		// Convert the current date to Jalaali (Iran date)
 		const currentDate = new Date()
-		const jalaaliDate = jalaali.toJalaali(currentDate)
+		const iranTime = new Date(currentDate.getTime() + 3.5 * 60 * 60 * 1000)
+		const jalaaliDate = jalaali.toJalaali(iranTime)
+
 		const createdAtJalaali =
 			`${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd} ` +
-			`${currentDate.getHours().toString()}:` +
-			`${currentDate.getMinutes().toString()}:` +
-			`${currentDate.getSeconds().toString()}`
+			`${iranTime.getHours().toString().padStart(2, '0')}:` +
+			`${iranTime.getMinutes().toString().padStart(2, '0')}:` +
+			`${iranTime.getSeconds().toString().padStart(2, '0')}`
 
-		// Create and save the new order with Jalaali date
+		// Create and save the new order
 		const newOrder = new Order({
 			userId: user._id,
 			schoolId: user.schoolId,
@@ -511,11 +513,19 @@ app.post('/addproduct', async (req, res) => {
 		isDiscount,
 	} = req.body
 
+	// Convert the current date to Jalaali (Iran date)
 	const currentDate = new Date()
-	const jalaaliDate = jalaali.toJalaali(currentDate)
+	const iranTime = new Date(currentDate.getTime() + 3.5 * 60 * 60 * 1000)
+	const jalaaliDate = jalaali.toJalaali(iranTime)
+
+	const createdAtJalaali =
+		`${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd} ` +
+		`${iranTime.getHours().toString().padStart(2, '0')}:` +
+		`${iranTime.getMinutes().toString().padStart(2, '0')}:` +
+		`${iranTime.getSeconds().toString().padStart(2, '0')}`
 
 	// Formating time
-	const dateTime = `${jalaaliDate.jy}/${jalaaliDate.jm}/${jalaaliDate.jd + 1}`
+	const dateTime = createdAtJalaali
 
 	try {
 		// Find the user's school and update the products array
