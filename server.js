@@ -492,6 +492,52 @@ app.get('/order/:trackingCode', async (req, res) => {
 	}
 })
 
+app.put('/order/:trackingCode/status', async (req, res) => {
+	if (!req.session.user) {
+		return res
+			.status(406)
+			.json({ message: 'شما به حساب کاربری خود وارد نشده‌اید' })
+	}
+
+	const user = req.session.user
+	const { trackingCode } = req.params
+	const { status } = req.body
+
+	const validStatuses = ['processing', 'delivered', 'canceled']
+
+	if (!validStatuses.includes(status)) {
+		return res.status(400).json({
+			message: 'وضعیت ارسال شده نامعتبر است',
+		})
+	}
+
+	try {
+		const order = await Order.findOne({ trackingCode })
+
+		if (!order) {
+			return res.status(404).json({ message: 'سفارشی یافت نشد' })
+		}
+
+		if (order.schoolId !== user.schoolId) {
+			return res.status(403).json({
+				message: 'شما اجازه دسترسی به این سفارش را ندارید',
+			})
+		}
+
+		order.status = status
+		await order.save()
+
+		return res.status(200).json({
+			message: 'وضعیت سفارش با موفقیت به‌روزرسانی شد',
+		})
+	} catch (error) {
+		return res.status(500).json({
+			message: 'خطایی در به‌روزرسانی سفارش رخ داد. لطفاً دوباره تلاش کنید',
+			error: error.message,
+		})
+	}
+})
+
 // Add new product to school
 app.post('/addproduct', async (req, res) => {
 	if (!req.session.user) {
